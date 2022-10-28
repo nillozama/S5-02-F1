@@ -25,12 +25,10 @@ public class Player {
 	private String userName;
 	//@Column (name="password")
 	//private String password;
-	/*@OneToMany (mappedBy="player")
-	private List <DiceRoll> plays;*/
 	@CreationTimestamp
 	@Column (name="fecha_registro", updatable = false)
 	private Date registrationDate;
-	@OneToMany(mappedBy = "player")//, cascade = CascadeType.ALL, orphanRemoval = true
+	@OneToMany(mappedBy = "player")
 	private List<DiceRoll> diceRolls;
 	@Column (name="average")
 	private float averagePlays;

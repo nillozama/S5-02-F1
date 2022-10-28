@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.domain.DiceRoll;
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.dto.DiceRollDTO;
+import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.dto.PlayerDTO;
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.repository.DiceRollRepository;
 
 @Service
@@ -18,7 +19,6 @@ public class DiceRollServiceImpl implements DiceRollService{
 	private DiceRollRepository drRepository;
 	@Autowired
 	ModelMapper modelMapper;
-
 
 	@Override
 	public List<DiceRollDTO> getAllDiceRolls() {
@@ -36,14 +36,11 @@ public class DiceRollServiceImpl implements DiceRollService{
 	}
 
 	@Override
-	public List<DiceRollDTO> findByPlayer(int id) {
+	public List<DiceRollDTO> findByPlayer(int idPlayer) {
 		
 		List <DiceRoll> playerPlays=new ArrayList<DiceRoll>();
-		
-		//drRepository.findByPlayer(id).forEach(dr->playerPlays.add(dr));
-		drRepository.findPlaysByPlayer(id).forEach(dr->playerPlays.add(drRepository.findById(dr).get()));
+		drRepository.findPlaysByPlayer(idPlayer).forEach(dr->playerPlays.add(drRepository.findById(dr).get()));
 		List <DiceRollDTO> playerPlaysDTO=new ArrayList<DiceRollDTO>();
-		
 		
 		if(!playerPlays.isEmpty()) {
 			
@@ -51,35 +48,26 @@ public class DiceRollServiceImpl implements DiceRollService{
 		}
 		
 		return playerPlaysDTO;
-		
 	}
 	
 	@Override
 	public void saveOrUpdate(DiceRollDTO diceRollDTO) {
 		
+		
 		DiceRoll diceRoll=modelMapper.map(diceRollDTO, DiceRoll.class);
 		drRepository.save(diceRoll);
-
 	}
 
 	@Override
-	public void deleteAllPlaysByPlayer(int id) {
+	public void deleteAllPlaysByPlayer(int idPlayer) {
 		
-		drRepository.findPlaysByPlayer(id).forEach(dr->drRepository.deleteById(dr));
+		
+		drRepository.findPlaysByPlayer(idPlayer).forEach(dr->drRepository.deleteById(dr));	
 	}
 
 	@Override
-	public DiceRollDTO playGame() {
+	public DiceRollDTO playGame(PlayerDTO playerDTO) {
 
-		return null;
-	}
-
-	@Override
-	public float getTotalAverage() {
-		
-		float totalAverage= Math.round(drRepository.selectWinnersDiceRolls()*10000)/drRepository.selectDiceRolls();
-		
-		return totalAverage/100;
-
+		return new DiceRollDTO(playerDTO);
 	}
 }

@@ -4,11 +4,11 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 public class DiceRollDTO {
 	
-	private int id;
-	private int dice1;
-	private int dice2;
-	private int score;
-	//@JsonIgnore
+	private long id;
+	private byte dice1;
+	private byte dice2;
+	private byte score;
+	@JsonIgnore
 	private boolean winningRoll;
 	private String message;
 	@JsonIgnore
@@ -24,16 +24,16 @@ public class DiceRollDTO {
 		this.player=player;
 		dice1=calculateDiceScore();
 		dice2=calculateDiceScore();
-		score=(dice1+dice2);
+		score=(byte) (dice1+dice2);
 		winningRoll=score==7;
 		message=generateMessage();
 	}
 	
-	public int getId() {
+	public long getId() {
 		return id;
 	}
 
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 	
@@ -50,7 +50,7 @@ public class DiceRollDTO {
 		return dice1;
 	}
 
-	public void setDice1(int dice1) {
+	public void setDice1(byte dice1) {
 		this.dice1 = dice1;
 	}
 
@@ -58,15 +58,15 @@ public class DiceRollDTO {
 		return dice2;
 	}
 
-	public void setDice2(int dice2) {
+	public void setDice2(byte dice2) {
 		this.dice2 = dice2;
 	}
 
-	public int getScore() {
+	public byte getScore() {
 		return score;
 	}
 
-	public void setScore(int score) {
+	public void setScore(byte score) {
 		this.score = score;
 	}
 
@@ -78,8 +78,6 @@ public class DiceRollDTO {
 		this.winningRoll = winningRoll;
 	}
 	
-	
-	
 	public String getMessage() {
 		return message;
 	}
@@ -88,9 +86,9 @@ public class DiceRollDTO {
 		this.message = message;
 	}
 
-	public int calculateDiceScore(){
+	public byte calculateDiceScore(){
 		
-		return  (int) (6*Math.random()+1);
+		return  (byte) (6*Math.random()+1);
 	}
 	
 	public String generateMessage() {

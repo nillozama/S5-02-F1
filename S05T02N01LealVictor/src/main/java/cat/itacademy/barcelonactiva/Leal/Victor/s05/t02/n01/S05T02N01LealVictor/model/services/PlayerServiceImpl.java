@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.modelmapper.ModelMapper;
 
-import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.domain.DiceRoll;
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.domain.Player;
+import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.dto.DiceRollDTO;
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.dto.PlayerDTO;
 import cat.itacademy.barcelonactiva.Leal.Victor.s05.t02.n01.S05T02N01LealVictor.model.repository.PlayerRepository;
 
@@ -27,13 +27,6 @@ public class PlayerServiceImpl implements PlayerService{
 		List<PlayerDTO> playersDTO=new ArrayList<PlayerDTO>();
 		
 		if (!players.isEmpty()) {
-		      
-		    players.forEach(x->updateAverageService(x));
-		    
-		    /*for(Player p:players) {
-		    	
-		    	System.out.println(p.getAveragePlays());
-		    }*/
 
 			players.forEach(p->playersDTO.add(modelMapper.map(p, PlayerDTO.class)));
 		}
@@ -45,7 +38,6 @@ public class PlayerServiceImpl implements PlayerService{
 	public PlayerDTO getPlayerById(int id) {
 		
 		Player player=playerRepository.findById(id).get();
-		updateAverageService(player);
 		PlayerDTO playerDTO=modelMapper.map(player,PlayerDTO.class);
 		
 		return playerDTO;
@@ -57,16 +49,28 @@ public class PlayerServiceImpl implements PlayerService{
 		Player player=modelMapper.map(playerDTO, Player.class);
 
 		playerRepository.save(player);
-		
 	}
 	
 	@Override
 	public void update(PlayerDTO playerDTO) {
 		
+		String userName=playerDTO.getUserName();
+		playerDTO=getPlayerById(playerDTO.getId());
+		playerDTO.setUserName(userName);	
 		Player player=modelMapper.map(playerDTO, Player.class);
 
 		playerRepository.save(player);
+	}
+	
+	@Override
+	public void update(PlayerDTO playerDTO, DiceRollDTO diceRollDTO) {
 		
+		List<DiceRollDTO> diceRolls=playerDTO.getDiceRolls();
+		diceRolls.add(diceRollDTO);
+		playerDTO.setDiceRolls(diceRolls);
+		updateAverageService(playerDTO);
+		Player player=modelMapper.map(playerDTO, Player.class);
+		playerRepository.save(player);
 	}
 	
 	@Override
@@ -75,26 +79,24 @@ public class PlayerServiceImpl implements PlayerService{
 		playerRepository.deleteById(id);
 	}
 	
-	public void updateAverageService(Player player) {
+	public void updateAverageService(PlayerDTO playerDTO) {
 		
-		float average = 0;
+		float average=0;
 		int count = 0;
 		
-		if (player.getDiceRolls().size() != 0) {
-			for (DiceRoll d : player.getDiceRolls()) {
+		if (playerDTO.getDiceRolls().size() != 0) {
+			for (DiceRollDTO d : playerDTO.getDiceRolls()) {
 
 				if (d.getWinningRoll()) {
 
 					count++;
 				}
 			}
-			average = (float) count * 100 / player.getDiceRolls().size();
+			average = (float) count * 100 / playerDTO.getDiceRolls().size();
 		}
-		System.out.println(player.getId()+" "+average);
+
 		average=Math.round(average*100);
-		player.setAveragePlays(average/100);
-		
-		//playerRepository.updateAverage(player.getId(), average);
+		playerDTO.setAveragePlays(average/100);
 	}
 	
 	@Override
@@ -132,7 +134,25 @@ public class PlayerServiceImpl implements PlayerService{
 
 			result=true;
 		}
-		System.out.println(result);
+
 		return result;
+	}
+
+	@Override
+	public void restartAverage(PlayerDTO playerDTO) {
+		
+		playerDTO.setAveragePlays(0);
+		Player player=modelMapper.map(playerDTO, Player.class);
+		playerRepository.save(player);
+	}
+	
+	@Override
+	public void deleteAllPlaysByPlayer(PlayerDTO playerDTO) {
+		
+		List<DiceRollDTO> diceRolls=new ArrayList <DiceRollDTO>();
+		playerDTO.setDiceRolls(diceRolls);
+		updateAverageService(playerDTO);
+		Player player=modelMapper.map(playerDTO, Player.class);
+		playerRepository.save(player);
 	}
 }

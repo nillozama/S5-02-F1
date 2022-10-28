@@ -36,16 +36,16 @@ public class GameControllerImpl implements GameController {
 
 	@Override
 	@PostMapping()
-	public ResponseEntity<String> addPlayer(@RequestParam (defaultValue="ANÒNIM") String name) { // crea un jugador/a
+	public ResponseEntity<String> addPlayer(@RequestParam(defaultValue = "ANÒNIM") String name) { // crea un jugador/a
 
-		ResponseEntity<String> responseEntity = null;
-		
-		if (name.equalsIgnoreCase("ANÒNIM")||!playerService.findPlayerByName(name)) {
+		ResponseEntity<String> responseEntity;
 
-			PlayerDTO playerDTO = new PlayerDTO (name);
+		if (name.equalsIgnoreCase("ANÒNIM") || !playerService.findPlayerByName(name)) {
+
+			PlayerDTO playerDTO = new PlayerDTO(name);
 			try {
 				playerService.save(playerDTO);
-				responseEntity = new ResponseEntity<>("S'ha creat el jugador "+name, HttpStatus.CREATED);
+				responseEntity = new ResponseEntity<>("S'ha creat el jugador " + name, HttpStatus.CREATED);
 			} catch (Exception e) {
 				responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
 			}
@@ -58,39 +58,39 @@ public class GameControllerImpl implements GameController {
 
 		return responseEntity;
 	}
-	/*public ResponseEntity<PlayerDTO> addPlayer(@RequestBody PlayerDTO playerDTO) { // crea un jugador/a
-
-		ResponseEntity<PlayerDTO> responseEntity = null;
-		try {
-
-			playerService.save(playerDTO);
-			responseEntity = new ResponseEntity<>(playerDTO, HttpStatus.CREATED);
-		} catch (Exception e) {
-			responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
-		}
-
-		return responseEntity;
-	}*/
-
+	
 	@Override
 	@PutMapping()
-	public ResponseEntity<PlayerDTO> updatePlayer(@RequestBody PlayerDTO playerDTO) { // modifica el nom del jugador/a
+	public ResponseEntity<String> updatePlayer(@RequestBody PlayerDTO playerDTO) { //modifica el nom del jugador/a
 
-		ResponseEntity<PlayerDTO> responseEntity;
+		ResponseEntity<String> responseEntity;
+		String name=playerDTO.getUserName();
 
-		if (playerService.getPlayerById(playerDTO.getId()) != null) {
+		try{
+			playerService.getPlayerById(playerDTO.getId());
+			
+			if (name.equalsIgnoreCase("ANÒNIM") || !playerService.findPlayerByName(name)) {
 
-			playerService.update(playerDTO);
+				playerService.update(playerDTO);
+				
+				responseEntity = new ResponseEntity<>("S'ha modificat el nom a " +name , HttpStatus.OK);
+			}
+			else {
 
-			responseEntity = new ResponseEntity<>(playerDTO, HttpStatus.OK);
-		} else {
+				responseEntity = new ResponseEntity<>("Aquest nom d'usuari ja existeix.", HttpStatus.IM_USED);
+			}
+			
 
-			responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+		catch (Exception e) {
+
+			responseEntity = new ResponseEntity<>("No hi ha un usuari amb aquest id.",HttpStatus.NOT_FOUND);
 		}
 
 		return responseEntity;
 	}
 
+	@Override
 	@PostMapping("/{id}")
 	@ResponseBody
 	public ResponseEntity<String> playGame(@PathVariable("id") int idPlayer) { // un jugador/a específic realitza una
@@ -98,21 +98,24 @@ public class GameControllerImpl implements GameController {
 
 		ResponseEntity<String> responseEntity;
 
-		if (playerService.getPlayerById(idPlayer) != null) {
-			
-			PlayerDTO playerDTO=playerService.getPlayerById(idPlayer);
+		try {
+			playerService.getPlayerById(idPlayer);
 
-			DiceRollDTO diceRollDTO = new DiceRollDTO(playerDTO);
+			PlayerDTO playerDTO = playerService.getPlayerById(idPlayer);
+			//DiceRollDTO diceRollDTO = new DiceRollDTO(playerDTO);
+			DiceRollDTO diceRollDTO=diceRollService.playGame(playerDTO);
+
 			try {
 				diceRollService.saveOrUpdate(diceRollDTO);
-				
+				playerService.update(playerDTO, diceRollDTO);
+
 				responseEntity = new ResponseEntity<>(diceRollDTO.generateMessage(), HttpStatus.CREATED);
 			} catch (Exception e) {
 				responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
 			}
 		}
 
-		else {
+		catch (Exception e){
 
 			responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
 		}
@@ -123,18 +126,28 @@ public class GameControllerImpl implements GameController {
 	@Override
 	@DeleteMapping("/{id}/games")
 	@ResponseBody
-	public ResponseEntity<HttpStatus> deleteDiceRolls(@PathVariable("id") int id) { // elimina les tirades del jugador/a
-
+	public ResponseEntity<HttpStatus> deleteDiceRolls(@PathVariable("id") int idPlayerDTO) {//elimina les tirades del jugador
+																							
 		ResponseEntity<HttpStatus> responseEntity;
-
+		
 		try {
-			diceRollService.deleteAllPlaysByPlayer(id);
+			PlayerDTO playerDTO=playerService.getPlayerById(idPlayerDTO);
 
-			responseEntity = new ResponseEntity<>(HttpStatus.NO_CONTENT);
-		} catch (Exception e) {
-			responseEntity = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			try {
+				diceRollService.deleteAllPlaysByPlayer(idPlayerDTO);
+				playerService.deleteAllPlaysByPlayer(playerDTO);
+
+				responseEntity = new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			} catch (Exception e) {
+				responseEntity = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
 		}
 		
+		catch (Exception e) {
+
+			responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
 		return responseEntity;
 	}
 
@@ -164,7 +177,7 @@ public class GameControllerImpl implements GameController {
 
 	@Override
 	@GetMapping("/{id}/games")
-	public ResponseEntity<List<DiceRollDTO>> getAllDiceRolls(@PathVariable("id") int idPlayerDTO) { // retorna elllistat dejugades per unjugador/a
+	public ResponseEntity<List<DiceRollDTO>> getAllDiceRolls(@PathVariable("id") int idPlayerDTO) { //retorna el llistat dejugades per unjugador/a
 
 		ResponseEntity<List<DiceRollDTO>> responseEntity;
 
@@ -186,15 +199,12 @@ public class GameControllerImpl implements GameController {
 	@Override
 	@GetMapping("/ranking")
 	public ResponseEntity<Float> getAverageRanking() { // retorna el ranking mig de tots els jugadors/es del
-																	// sistema. És a dir, el percentatge mitjà d’èxits.
 
 		ResponseEntity<Float> responseEntity = null;
-		float totalAverage=0;
-		
-		//totalAverage=diceRollService.getTotalAverage();
-		
-		totalAverage=playerService.getTotalAverage();
-		
+		float totalAverage = 0;
+
+		totalAverage = playerService.getTotalAverage();
+
 		try {
 
 			responseEntity = new ResponseEntity<Float>(totalAverage, HttpStatus.OK);
@@ -202,18 +212,16 @@ public class GameControllerImpl implements GameController {
 		} catch (Exception e) {
 			responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
 		}
-		
+
 		return responseEntity;
 	}
-	
+
 	@Override
 	@GetMapping("/rankingList")
-	public ResponseEntity<List<PlayerDTO>> getAverageRankingList() { // retorna el ranking mig de tots els jugadors/es del
-																	// sistema. És a dir, el percentatge mitjà d’èxits.
+	public ResponseEntity<List<PlayerDTO>> getAverageRankingList() { // retorna el ranking mig de tots els jugadors/es
 
 		ResponseEntity<List<PlayerDTO>> responseEntity = null;
-		
-		
+
 		return responseEntity;
 	}
 
@@ -222,7 +230,7 @@ public class GameControllerImpl implements GameController {
 	public ResponseEntity<PlayerDTO> getWorstPlayer() { // retorna el jugador/a amb pitjor percentatge d’èxit
 
 		ResponseEntity<PlayerDTO> responseEntity;
-		
+
 		try {
 
 			PlayerDTO playerDTO = playerService.getLoser();
@@ -240,7 +248,7 @@ public class GameControllerImpl implements GameController {
 	public ResponseEntity<PlayerDTO> getBestPlayer() { // retorna el jugador/a amb mitjor percentatge d’èxit
 
 		ResponseEntity<PlayerDTO> responseEntity;
-		
+
 		try {
 
 			PlayerDTO playerDTO = playerService.getWinner();
@@ -252,5 +260,95 @@ public class GameControllerImpl implements GameController {
 
 		return responseEntity;
 	}
+	
+	/*
+	 * 
+	@Override
+	@PostMapping("/{id}")
+	@ResponseBody
+	public ResponseEntity<String> playGame(@PathVariable("id") int idPlayer) { // un jugador/a específic realitza una
+																				// tirada dels daus
 
+		ResponseEntity<String> responseEntity;
+
+		if (playerService.getPlayerById(idPlayer) != null) {
+
+			PlayerDTO playerDTO = playerService.getPlayerById(idPlayer);
+			DiceRollDTO diceRollDTO = new DiceRollDTO(playerDTO);
+
+			try {
+				diceRollService.saveOrUpdate(diceRollDTO);
+				playerService.update(playerDTO, diceRollDTO);
+
+				responseEntity = new ResponseEntity<>(diceRollDTO.generateMessage(), HttpStatus.CREATED);
+			} catch (Exception e) {
+				responseEntity = new ResponseEntity<>(null, HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		}
+
+		else {
+
+			responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		return responseEntity;
+	}
+	
+	
+	@Override
+	@DeleteMapping("/{id}/games")
+	@ResponseBody
+	public ResponseEntity<HttpStatus> deleteDiceRolls(@PathVariable("id") int idPlayerDTO) {//elimina les tirades del jugador
+																							
+		ResponseEntity<HttpStatus> responseEntity;
+		PlayerDTO playerDTO=playerService.getPlayerById(idPlayerDTO);
+
+		if ( playerDTO!= null) {
+
+			try {
+				diceRollService.deleteAllPlaysByPlayer(idPlayerDTO);
+				playerService.deleteAllPlaysByPlayer(playerDTO);
+
+				responseEntity = new ResponseEntity<>(HttpStatus.NO_CONTENT);
+			} catch (Exception e) {
+				responseEntity = new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+			}
+		}
+		
+		else {
+
+			responseEntity = new ResponseEntity<>(HttpStatus.NOT_FOUND);
+		}
+
+		return responseEntity;
+	}
+	
+	@Override
+	@PutMapping()
+	public ResponseEntity<String> updatePlayer(@RequestBody PlayerDTO playerDTO) { //modifica el nom del jugador/a
+
+		ResponseEntity<String> responseEntity;
+		String name=playerDTO.getUserName();
+
+		if (playerService.getPlayerById(playerDTO.getId()) != null) {
+			
+			if (name.equalsIgnoreCase("ANÒNIM") || !playerService.findPlayerByName(name)) {
+
+				playerService.update(playerDTO);
+				
+				responseEntity = new ResponseEntity<>("S'ha modificat el nom a " +name , HttpStatus.OK);
+			}
+			else {
+
+				responseEntity = new ResponseEntity<>("Aquest nom d'usuari ja existeix.", HttpStatus.IM_USED);
+			}
+			
+
+		} else {
+
+			responseEntity = new ResponseEntity<>("No hi ha un usuari amb aquest id.",HttpStatus.NOT_FOUND);
+		}
+
+		return responseEntity;
+	}*/
 }

@@ -19,7 +19,7 @@ public class DiceRoll {
 	@Id
 	@GeneratedValue (strategy=GenerationType.IDENTITY)
 	@Column (name="id")
-	private int id;
+	private long id;
 	@Column (name="puntuacion")
 	private byte score;
 	@Column (name="mano_ganadora")
@@ -27,19 +27,19 @@ public class DiceRoll {
 	@Column (name="mensaje")
 	private String message;
 	@Column (name="valor_dado_1")
-	private int dice1;
+	private byte dice1;
 	@Column (name="valor_dado_2")
-	private int dice2;
+	private byte dice2;
 	@JsonIgnore
 	@ManyToOne (fetch=FetchType.LAZY)
 	@JoinColumn (name="jugador_id")
 	Player player;
 	
 	
-	public int getId() {
+	public long getId() {
 		return id;
 	}
-	public void setId(int id) {
+	public void setId(long id) {
 		this.id = id;
 	}
 	public byte getScore() {
@@ -69,14 +69,13 @@ public class DiceRoll {
 	public int getDice1() {
 		return dice1;
 	}
-	public void setDice1(int dice1) {
+	public void setDice1(byte dice1) {
 		this.dice1 = dice1;
 	}
-	public int getDice2() {
+	public byte getDice2() {
 		return dice2;
 	}
-	public void setDice2(int dice2) {
+	public void setDice2(byte dice2) {
 		this.dice2 = dice2;
 	}
-	
 }
