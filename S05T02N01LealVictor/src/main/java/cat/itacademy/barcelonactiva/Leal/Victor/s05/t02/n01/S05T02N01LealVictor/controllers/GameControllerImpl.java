@@ -39,6 +39,9 @@ public class GameControllerImpl implements GameController {
 	public ResponseEntity<String> addPlayer(@RequestParam(defaultValue = "ANÒNIM") String name) { // crea un jugador/a
 
 		ResponseEntity<String> responseEntity;
+		
+		//String cadenaNormalize = Normalizer.normalize(name, Normalizer.Form.NFD);   
+		//String cadenaSinAcentos = cadenaNormalize.replaceAll("[^\\p{ASCII}]", "");
 
 		if (name.equalsIgnoreCase("ANÒNIM") || !playerService.findPlayerByName(name)) {
 
